@@ -3,3 +3,5 @@
 .coda-pack.json
 node_modules
 patches
+*/.DS_Store
+*/.git

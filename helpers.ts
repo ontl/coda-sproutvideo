@@ -11,14 +11,16 @@ const PRIVACY_STATES = [
 
 export async function callApi(
   context: coda.ExecutionContext,
-  endpoint: "videos" | "folders" | "tags" | "account",
+  endpoint: string,
   method: "GET" | "POST" = "GET",
   ttl: number = 3600,
   params?: { [key: string]: string }
 ) {
+  let url = coda.withQueryParams(BASE_URL + endpoint, params);
+  console.log(`Calling ${url}`);
   let response = await context.fetcher.fetch({
     method: method,
-    url: BASE_URL + endpoint,
+    url: url,
     cacheTtlSecs: ttl,
   });
   return response.body;
@@ -61,8 +63,19 @@ function calculateAspectRatio(width: number, height: number): string {
 }
 
 export async function syncVideos(context: coda.SyncExecutionContext) {
+  // If there's an existing continuation, use its endpoint URL with page
+  // number etc. included. Otherwise, just use the basic "videos" endpoint.
+  let endpoint =
+    (context.sync.continuation?.nextPageEndpoint as string) || "videos";
+  // console.log(`Syncing videos from ${endpoint}`);
+
   let [videosResponse, tagsResponse] = await Promise.all([
-    callApi(context, "videos", "GET", 0),
+    // Get the videos
+    callApi(context, endpoint, "GET", 0, {
+      order_by: "created_at",
+      order_dir: "desc",
+    }),
+    // Get the tags
     callApi(context, "tags", "GET", 60 * 60),
   ]);
 
@@ -87,10 +100,20 @@ export async function syncVideos(context: coda.SyncExecutionContext) {
     video.source_video_file_size = Math.round(
       video.source_video_file_size / 1024 / 1024
     );
+    // console.log(video.title);
   }
+  let nextContinuation;
+  if (videosResponse.next_page)
+    nextContinuation = {
+      // Get the URL for the next page. Strip out the BASE_URL, cause we'll be
+      // adding that back in ourselves in callApi().
+      nextPageEndpoint: videosResponse.next_page.replace(BASE_URL, ""),
+    };
+
+  // console.log("nextContinuation", JSON.stringify(nextContinuation));
 
   return {
     result: videos,
-    continuation: undefined,
+    continuation: nextContinuation,
   };
 }

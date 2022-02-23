@@ -9,7 +9,7 @@ pack.setUserAuthentication({
   headerName: "SproutVideo-Api-Key",
   instructionsUrl: "https://sproutvideo.com/settings/api",
   getConnectionName: async function (context) {
-    let response = await helpers.callApi(
+    let response = await helpers.callAPI(
       context,
       "account",
       "GET",
@@ -32,5 +32,28 @@ pack.addSyncTable({
     execute: async function ([], context) {
       return helpers.syncVideos(context);
     },
+  },
+});
+
+pack.addFormula({
+  name: "Tag",
+  description: "Tags a video",
+  parameters: [
+    coda.makeParameter({
+      name: "VideoID",
+      description: "The ID of the video",
+      type: coda.ParameterType.String,
+    }),
+    coda.makeParameter({
+      name: "Tag",
+      description: "The tag to add",
+      type: coda.ParameterType.String,
+    }),
+  ],
+  resultType: coda.ValueType.Object,
+  schema: schemas.VideoSchema,
+  isAction: true,
+  execute: async function ([videoID, tag], context) {
+    return helpers.addTag(context, videoID, tag);
   },
 });

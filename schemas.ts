@@ -25,6 +25,10 @@ export const VideoSchema = coda.makeObjectSchema({
     width: { type: coda.ValueType.Number },
     description: { type: coda.ValueType.String },
     plays: { type: coda.ValueType.Number },
+    link: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+    },
     sourceSizeMB: {
       type: coda.ValueType.Number,
       fromKey: "source_video_file_size",
@@ -49,7 +53,11 @@ export const VideoSchema = coda.makeObjectSchema({
     privacy: { type: coda.ValueType.String },
     posterFrame: {
       type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageAttachment,
+      // ImageAttachment (downloads the image into the coda doc) is recommended
+      // over ImageReference (hotlinks the image at its original URL), but I'm
+      // kinda worried about sync performance on super large video accounts, so I'm
+      // sticking with the hotlinking approach for now for poster frames.
+      codaType: coda.ValueHintType.ImageReference,
     },
     thumbnail: {
       type: coda.ValueType.String,

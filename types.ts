@@ -18,3 +18,8 @@
 //   fullName: string;
 //   createdAt: string;
 // }
+
+export interface Tag {
+  id: string;
+  name: string;
+}

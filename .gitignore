@@ -1,5 +1,5 @@
 .coda.json
-.coda-credentials.json
+.coda-credentials*
 .coda-pack.json
 node_modules
 patches

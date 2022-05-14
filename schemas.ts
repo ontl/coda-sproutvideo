@@ -2,9 +2,9 @@ import * as coda from "@codahq/packs-sdk";
 
 export const VideoSchema = coda.makeObjectSchema({
   type: coda.ValueType.Object,
-  id: "videoId",
-  primary: "title",
-  featured: ["thumbnail", "duration", "createdAt"],
+  idProperty: "videoId",
+  displayProperty: "title",
+  featuredProperties: ["thumbnail", "duration", "createdAt"],
   properties: {
     videoId: {
       type: coda.ValueType.String,

@@ -28,9 +28,17 @@ pack.addSyncTable({
   formula: {
     name: "SyncVideos",
     description: "Syncs videos from your Sprout Video library",
-    parameters: [],
-    execute: async function ([], context) {
-      return helpers.syncVideos(context);
+    parameters: [
+      coda.makeParameter({
+        name: "StartFrom",
+        description:
+          "Useful in cases where you have >10,000 videos, so not all old videos sync. Entering '3000' here will start from the 3000th-most-recent video and go back in time from there.",
+        type: coda.ParameterType.Number,
+        optional: true,
+      }),
+    ],
+    execute: async function ([startFrom], context) {
+      return helpers.syncVideos(context, startFrom);
     },
   },
 });

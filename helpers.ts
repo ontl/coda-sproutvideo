@@ -45,7 +45,7 @@ export async function callAPI(
  * Returns the best resolution that a video is available in
  */
 function findBestResolution(resolutions: { [key: string]: string }): string {
-  let bestResolution: string;
+  let bestResolution = "";
   if (resolutions["240p"]) bestResolution = "240p";
   if (resolutions["360p"]) bestResolution = "360p";
   if (resolutions["480p"]) bestResolution = "480p";
@@ -71,7 +71,7 @@ function calculateAspectRatio(width: number, height: number): string {
   if (trueRatio > 1.678 && trueRatio < 1.878) return "16:9 (widescreen)";
   if (trueRatio > 1.233 && trueRatio < 1.433) return "4:3 (traditional)";
   if (trueRatio > 1.4 && trueRatio < 1.6) return "3:2 (wide)";
-  if (trueRatio > 0.75 && trueRatio < 0.85) return "5:4 (social tall)";
+  if (trueRatio > 0.75 && trueRatio < 0.85) return "4:5 (social tall)";
   if (trueRatio > 0.5125 && trueRatio < 0.6125) return "9:16 (vertical)";
   if (width > height) {
     return "horizontal";
@@ -96,9 +96,10 @@ function enrichVideo(video, allTags: types.Tag[]) {
   // Coda needs a string for a duration property, with units mentioned
   video.duration = Math.round(video.duration) + " secs";
   // Take the tag IDs that we get, and match them to their corresponding tag labels
-  video.tags = video.tags.map(
-    (tagId) => allTags.find((tag) => tag.id === tagId).name
-  );
+  // Filter out any undefined values (tags that weren't found)
+  video.tags = video.tags
+    .map((tagId) => allTags.find((tag) => tag.id === tagId)?.name)
+    .filter((tagName) => tagName !== undefined);
   // Convert video file size to MB
   video.source_video_file_size = Math.round(
     video.source_video_file_size / 1024 / 1024
@@ -109,11 +110,25 @@ function enrichVideo(video, allTags: types.Tag[]) {
 /**
  *  Sync table function for Videos
  */
-export async function syncVideos(context: coda.SyncExecutionContext) {
-  // If there's an existing continuation, use its endpoint URL with page
-  // number etc. included. Otherwise, just use the basic "videos" endpoint.
-  let endpoint =
-    (context.sync.continuation?.nextPageEndpoint as string) || "videos";
+export async function syncVideos(
+  context: coda.SyncExecutionContext,
+  startFrom?: number
+) {
+  let endpoint: string;
+  if (context.sync.continuation?.nextPageEndpoint) {
+    // If there's an existing continuation, use its endpoint URL with page
+    // number etc. included.
+    endpoint = context.sync.continuation.nextPageEndpoint as string;
+  } else if (startFrom && startFrom > 1) {
+    // If user has specified a video number to start from, use that. This is technically
+    // a bit imprecise, cause we're just grabbing the whole page that includes that video,
+    // so we'll be grabbing some extras. Hopefully this is good enough for most users.
+    // You would think this would be Math.floor, but the first page is page 1, not page 0.
+    endpoint = `videos?page=${Math.ceil(startFrom / 25)}`;
+  } else {
+    // Otherwise, just grab the first page of videos
+    endpoint = "videos";
+  }
 
   let [videosResponse, tagsResponse] = await Promise.all([
     // Get the videos
